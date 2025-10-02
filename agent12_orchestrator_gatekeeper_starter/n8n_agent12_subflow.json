@@ -1,0 +1,163 @@
+{
+  "name": "Agent12 \u2013 Orchestrator & Gatekeeper",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        300,
+        200
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Policy Read",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.github.com/repos/{{$json.repo}}/contents/.factory-policy.yml"
+      },
+      "position": [
+        540,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Gate Script",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "parameters": {
+        "command": "python3 tools/orchestrator_gate.py"
+      },
+      "position": [
+        800,
+        200
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Decision Switch",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"status\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "position": [
+        1040,
+        200
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Merge & Deploy",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 3,
+      "parameters": {
+        "operation": "addComment",
+        "repository": "{{$json.repo}}",
+        "issueNumber": "={{$json[\"prNumber\"]}}",
+        "comment": "All machine gates PASS. Proceeding to merge & deploy."
+      },
+      "position": [
+        1280,
+        140
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    },
+    {
+      "id": "6",
+      "name": "Annotate Failures",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 3,
+      "parameters": {
+        "operation": "addComment",
+        "repository": "{{$json.repo}}",
+        "issueNumber": "={{$json[\"prNumber\"]}}",
+        "comment": "Policy gates FAILED. See specs/factory.decision.json for reasons."
+      },
+      "position": [
+        1280,
+        260
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Policy Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Policy Read": {
+      "main": [
+        [
+          {
+            "node": "Gate Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gate Script": {
+      "main": [
+        [
+          {
+            "node": "Decision Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision Switch": {
+      "main": [
+        [
+          {
+            "node": "Merge & Deploy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Annotate Failures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

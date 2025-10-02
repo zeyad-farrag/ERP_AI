@@ -1,0 +1,117 @@
+{
+  "name": "Agent5 \u2013 Integrations & Messaging",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        300,
+        200
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Fetch Integration Specs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.github.com/repos/{{$json.repo}}/contents/shipping_suite_documentation/integrations"
+      },
+      "position": [
+        560,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Build Integrations (LLM)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 3,
+      "parameters": {
+        "model": "gpt-4.1",
+        "prompt": "<< paste prompts/agent5_integrations_messaging.prompt.md >>"
+      },
+      "position": [
+        820,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE"
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Update PR with Integration Artifacts",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 3,
+      "parameters": {
+        "operation": "update",
+        "repository": "{{$json.repo}}",
+        "pullRequestNumber": "={{$json[\"number\"]}}",
+        "fieldsUi": {
+          "file": [
+            {
+              "filePath": "specs/integrations.summary.json",
+              "fileContent": "={{JSON.stringify($json, null, 2)}}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1080,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Fetch Integration Specs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Integration Specs": {
+      "main": [
+        [
+          {
+            "node": "Build Integrations (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Integrations (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Update PR with Integration Artifacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

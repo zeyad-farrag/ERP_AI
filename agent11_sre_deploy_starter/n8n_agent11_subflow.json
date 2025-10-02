@@ -1,0 +1,72 @@
+{
+  "name": "Agent11 \u2013 SRE / Deploy & Infra",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        300,
+        200
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Deploy & Canary",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "parameters": {
+        "command": "./tools/run_sre.sh"
+      },
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Collect Verdict",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.github.com/repos/{{$json.repo}}/contents/specs/sre.summary.json"
+      },
+      "position": [
+        820,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Deploy & Canary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deploy & Canary": {
+      "main": [
+        [
+          {
+            "node": "Collect Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

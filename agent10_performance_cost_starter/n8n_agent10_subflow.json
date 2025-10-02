@@ -1,0 +1,72 @@
+{
+  "name": "Agent10 \u2013 Performance & Cost",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        300,
+        200
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Run Perf Suite",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "parameters": {
+        "command": "./tools/run_perf.sh"
+      },
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Collect Verdict",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.github.com/repos/{{$json.repo}}/contents/specs/perf.summary.json"
+      },
+      "position": [
+        820,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Run Perf Suite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Perf Suite": {
+      "main": [
+        [
+          {
+            "node": "Collect Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

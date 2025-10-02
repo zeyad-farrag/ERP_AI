@@ -1,0 +1,72 @@
+{
+  "name": "Agent8 \u2013 Security Sentinel",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        300,
+        200
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Run Security Checks",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "parameters": {
+        "command": "./tools/run_security.sh"
+      },
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Collect Verdict",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.github.com/repos/{{$json.repo}}/contents/specs/security.summary.json"
+      },
+      "position": [
+        820,
+        200
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Run Security Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Security Checks": {
+      "main": [
+        [
+          {
+            "node": "Collect Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
